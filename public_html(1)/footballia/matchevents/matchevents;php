@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Match Events</title>
+  <base href="http://localhost:8000/footballia/">
+  <link rel="stylesheet" href="css/mystyle.css">
+</head>
+
+<body>
+<?php include '../inc/header.php';?>
+
+<div class="content">
+<h2>Match Events</h2>
+<?php
+include "../config/init.php";
+
+try {
+    // Connect to the database
+    $conn = new PDO("mysql:host=$server;dbname=$db", $user, $password);
+
+    // SQL query to fetch match events with associated match and player details
+    $qry = "SELECT me.event_id, m.match_id, t1.name AS team1_name, t2.name AS team2_name, 
+                   p.name AS player_name, me.event_type, me.event_time, me.description
+            FROM MatchEvent me
+            JOIN Match m ON me.match_id = m.match_id
+            JOIN Team t1 ON m.team1_id = t1.team_id
+            JOIN Team t2 ON m.team2_id = t2.team_id
+            LEFT JOIN Player p ON me.player_id = p.player_id
+            ORDER BY m.date, m.time, me.event_time;";
+
+    $stmt = $conn->prepare($qry);
+    $stmt->execute();
+
+    // Display the match events in a table
+    echo "<table>\n";
+    echo "<caption>Match Events</caption>\n";
+    echo "<tr><th>Event ID</th><th>Match</th><th>Player</th><th>Event Type</th><th>Event Time (min)</th><th>Description</th></tr>\n";
+
+    // Loop through each event and display the details
+    while ($result = $stmt->fetch()) {
+        echo "<tr>";
+        echo "<td>" . $result['event_id'] . "</td>";
+        echo "<td>" . $result['team1_name'] . " vs " . $result['team2_name'] . " (" . $result['match_id'] . ")</td>";
+        echo "<td>" . ($result['player_name'] ? $result['player_name'] : "N/A") . "</td>";
+        echo "<td>" . $result['event_type'] . "</td>";
+        echo "<td>" . $result['event_time'] . "</td>";
+        echo "<td>" . ($result['description'] ? $result['description'] : "No description") . "</td>";
+        echo "</tr>\n";
+    }
+
+    echo "</table>\n";
+} catch(PDOException $e) {
+    echo "Error: " . $e->getMessage();
+}
+
+$conn = null;
+?>
+</div>
+
+<?php include '../inc/footer.php';?>
+</body>
+</html>
